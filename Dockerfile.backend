@@ -1,0 +1,22 @@
+# multistage build for the Spring Boot backend
+
+FROM maven:3.8.7-eclipse-temurin-17 as build
+WORKDIR /app
+
+# copy only the pom first to leverage docker cache
+COPY backend/pom.xml ./
+COPY backend/src ./src
+
+# build the jar (skip tests to speed up)
+RUN mvn clean package -DskipTests -f pom.xml
+
+# final runtime image
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+
+# expose default port
+EXPOSE 8080
+
+ENTRYPOINT ["java","-jar","/app/app.jar"]
